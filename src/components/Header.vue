@@ -3,7 +3,7 @@
     <div class="container">
       <div class="header-content">
         <div class="logo">
-          <a @click="goToHome" class="logo-link">
+          <router-link to="/" class="logo-link" @click="closeMenu">
             <div class="logo-icon">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
                 <path d="M9 5H7C5.89543 5 5 5.89543 5 7V19C5 20.1046 5.89543 21 7 21H17C18.1046 21 19 20.1046 19 19V7C19 5.89543 18.1046 5 17 5H15" stroke="currentColor" stroke-width="2"/>
@@ -16,25 +16,35 @@
               </svg>
             </div>
             <span class="logo-text">TaskTracker</span>
-          </a>
+          </router-link>
         </div>
 
         <nav class="nav" :class="{ 'nav-open': isMenuOpen }">
-          <a @click="goToHome" class="nav-link" :class="{ active: currentPathValue === '/' }">
+          <router-link 
+            to="/" 
+            class="nav-link" 
+            :class="{ active: $route.name === 'home' }"
+            @click="closeMenu"
+          >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" class="nav-icon">
               <path d="M3 9L12 2L21 9V20C21 20.5304 20.7893 21.0391 20.4142 21.4142C20.0391 21.7893 19.5304 22 19 22H5C4.46957 22 3.96086 21.7893 3.58579 21.4142C3.21071 21.0391 3 20.5304 3 20V9Z" stroke="currentColor" stroke-width="2"/>
               <path d="M9 22V12H15V22" stroke="currentColor" stroke-width="2"/>
             </svg>
             Задачи
-          </a>
+          </router-link>
           
-          <a @click="goToProfile" class="nav-link" :class="{ active: currentPathValue === '/profile' }">
+          <router-link 
+            to="/profile" 
+            class="nav-link" 
+            :class="{ active: $route.name === 'profile' }"
+            @click="closeMenu"
+          >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" class="nav-icon">
               <path d="M20 21V19C20 17.9391 19.5786 16.9217 18.8284 16.1716C18.0783 15.4214 17.0609 15 16 15H8C6.93913 15 5.92172 15.4214 5.17157 16.1716C4.42143 16.9217 4 17.9391 4 19V21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
               <path d="M12 11C14.2091 11 16 9.20914 16 7C16 4.79086 14.2091 3 12 3C9.79086 3 8 4.79086 8 7C8 9.20914 9.79086 11 12 11Z" stroke="currentColor" stroke-width="2"/>
             </svg>
             Профиль
-          </a>
+          </router-link>
 
           <div class="user-section" v-if="isAuthenticated && user">
             <div class="user-avatar">
@@ -49,14 +59,19 @@
             </button>
           </div>
           
-          <a v-else @click="goToLogin" class="btn btn-primary">
+          <router-link 
+            v-else 
+            to="/login" 
+            class="btn btn-primary"
+            @click="closeMenu"
+          >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
               <path d="M15 3H19C19.5304 3 20.0391 3.21071 20.4142 3.58579C20.7893 3.96086 21 4.46957 21 5V19C21 19.5304 20.7893 20.0391 20.4142 20.4142C20.0391 20.7893 19.5304 21 19 21H15" stroke="currentColor" stroke-width="2"/>
               <path d="M10 17L15 12L10 7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
               <path d="M15 12H3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
             </svg>
             Войти
-          </a>
+          </router-link>
         </nav>
 
         <button class="menu-toggle" @click="toggleMenu" aria-label="Переключить меню">
@@ -70,32 +85,17 @@
 </template>
 
 <script setup lang="ts">
-import { ref, inject, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed } from 'vue';
+import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/store';
 import { authService } from '@/services/auth';
 
 const authStore = useAuthStore();
-const navigate = inject('navigate') as (path: string) => void;
-const currentPath = inject('currentPath') as () => string;
+const router = useRouter();
 
 const isAuthenticated = computed(() => authStore.isAuthenticated);
 const user = computed(() => authStore.user);
 const isMenuOpen = ref<boolean>(false);
-const currentPathValue = ref<string>(currentPath());
-
-// Слушаем изменения пути
-const updateCurrentPath = () => {
-  currentPathValue.value = currentPath();
-};
-
-onMounted(() => {
-  // Подписываемся на изменения роута
-  window.addEventListener('popstate', updateCurrentPath);
-});
-
-onUnmounted(() => {
-  window.removeEventListener('popstate', updateCurrentPath);
-});
 
 const toggleMenu = (): void => {
   isMenuOpen.value = !isMenuOpen.value;
@@ -105,30 +105,11 @@ const closeMenu = (): void => {
   isMenuOpen.value = false;
 };
 
-const goToHome = (): void => {
-  navigate('/');
-  closeMenu();
-  currentPathValue.value = '/';
-};
-
-const goToProfile = (): void => {
-  navigate('/profile');
-  closeMenu();
-  currentPathValue.value = '/profile';
-};
-
-const goToLogin = (): void => {
-  navigate('/login');
-  closeMenu();
-  currentPathValue.value = '/login';
-};
-
 const logout = (): void => {
   authService.logout();
   authStore.setUser(null);
-  navigate('/login');
+  router.push('/login');
   closeMenu();
-  currentPathValue.value = '/login';
 };
 </script>
 
@@ -158,7 +139,6 @@ const logout = (): void => {
   color: white;
   font-weight: 700;
   font-size: 20px;
-  cursor: pointer;
 }
 
 .logo-icon {
@@ -196,7 +176,6 @@ const logout = (): void => {
   border-radius: var(--radius);
   transition: var(--transition);
   font-size: 14px;
-  cursor: pointer;
 }
 
 .nav-link:hover,

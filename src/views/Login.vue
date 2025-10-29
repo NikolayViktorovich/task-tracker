@@ -140,13 +140,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, inject, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 import { authService } from '@/services/auth';
 import { useAuthStore } from '@/store';
 import type { OAuthProvider } from '@/config';
 
 const authStore = useAuthStore();
-const navigate = inject('navigate') as (path: string) => void;
+const router = useRouter();
 
 const loading = ref<boolean>(false);
 const processingCallback = ref<boolean>(false);
@@ -167,8 +168,11 @@ onMounted(async () => {
       const user = await authService.handleOAuthCallback();
       authStore.setUser(user);
       
+      // Очищаем URL параметры после успешной авторизации
       window.history.replaceState({}, '', '/');
-      navigate('/');
+      
+      // Перенаправляем на главную страницу
+      router.push('/');
     } catch (error) {
       console.error('OAuth error:', error);
       alert('Ошибка авторизации: ' + (error instanceof Error ? error.message : 'Неизвестная ошибка'));
