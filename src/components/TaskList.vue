@@ -20,6 +20,25 @@
       @cancel="showTaskForm = false" 
     />
 
+    <ConfirmModal
+      v-model:show="showDeleteConfirm"
+      title="Удаление задачи"
+      :message="deleteConfirmMessage"
+      type="error"
+      confirm-text="Удалить"
+      cancel-text="Отмена"
+      @confirm="confirmDelete"
+      @cancel="cancelDelete"
+    />
+
+    <NotificationModal
+      v-model:show="showSuccessNotification"
+      :title="notificationTitle"
+      :message="notificationMessage"
+      :type="notificationType"
+      @close="showSuccessNotification = false"
+    />
+
     <div class="stats-grid">
       <div class="stat-card">
         <div class="stat-icon total">
@@ -100,18 +119,18 @@
       </div>
     </div>
 
-    <div v-if="loading" class="loading-state">
+    <div v-if="loading && tasks.length === 0" class="loading-state">
       <LoadingSpinner />
       <p>Загружаем ваши задачи...</p>
     </div>
 
-    <div v-else-if="error" class="error-state">
+    <div v-else-if="error && tasks.length === 0" class="error-state">
       <div class="error-icon">
         <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
           <path d="M12 8V12M12 16H12.01M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
         </svg>
       </div>
-      <h3>Ошибка загрузки</h3>
+      <h3>Не удалось загрузить задачи</h3>
       <p>{{ error }}</p>
       <button @click="loadTasks" class="btn btn-primary mt-6">
         Попробовать снова
@@ -119,15 +138,16 @@
     </div>
 
     <div v-else class="tasks-container">
-      <div v-if="filteredTasks.length === 0" class="empty-state">
+      <div v-if="filteredTasks.length === 0 && !loading" class="empty-state">
         <div class="empty-icon">
           <svg width="64" height="64" viewBox="0 0 24 24" fill="none">
             <path d="M9 5H7C5.89543 5 5 5.89543 5 7V19C5 20.1046 5.89543 21 7 21H17C18.1046 21 19 20.1046 19 19V7C19 5.89543 18.1046 5 17 5H15" stroke="currentColor" stroke-width="2"/>
             <path d="M9 5C9 3.89543 9.89543 3 11 3H13C14.1046 3 15 3.89543 15 5V7H9V5Z" stroke="currentColor" stroke-width="2"/>
           </svg>
         </div>
-        <h3>Нет задач</h3>
-        <p>Начните с создания новой задачи</p>
+        <h3>Нет задач для отображения</h3>
+        <p v-if="searchQuery">Попробуйте изменить условия поиска</p>
+        <p v-else>Начните с создания новой задачи</p>
         <button @click="showTaskForm = true" class="btn btn-primary mt-6">
           Создать задачу
         </button>
@@ -154,6 +174,8 @@ import type { Task, TaskFilters } from '@/types';
 import TaskItem from './TaskItem.vue';
 import TaskForm from './TaskForm.vue';
 import LoadingSpinner from './LoadingSpinner.vue';
+import ConfirmModal from './ConfirmModal.vue';
+import NotificationModal from './NotificationModal.vue';
 
 const taskStore = useTaskStore();
 const { tasks, loading, error, completedTasks, pendingTasks } = storeToRefs(taskStore);
@@ -162,6 +184,14 @@ const { setTasks, addTask, updateTask, deleteTask, setLoading, setError } = task
 const showTaskForm = ref<boolean>(false);
 const filter = ref<TaskFilters['status']>('all');
 const searchQuery = ref<string>('');
+
+// Модальные окна
+const showDeleteConfirm = ref<boolean>(false);
+const showSuccessNotification = ref<boolean>(false);
+const taskToDelete = ref<number | null>(null);
+const notificationTitle = ref<string>('');
+const notificationMessage = ref<string>('');
+const notificationType = ref<'success' | 'error' | 'warning' | 'info'>('success');
 
 const filterTabs = [
   { label: 'Все задачи', value: 'all' as const },
@@ -177,7 +207,6 @@ const completionRate = computed(() => {
 const filteredTasks = computed(() => {
   let filtered = tasks.value;
 
-  // Фильтр по статусу
   switch (filter.value) {
     case 'completed':
       filtered = completedTasks.value;
@@ -187,7 +216,6 @@ const filteredTasks = computed(() => {
       break;
   }
 
-  // Поиск
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase();
     filtered = filtered.filter(task => 
@@ -207,16 +235,30 @@ const getFilterCount = (filterType: TaskFilters['status']): number => {
   }
 };
 
+const deleteConfirmMessage = computed(() => {
+  return 'Вы уверены, что хотите удалить эту задачу? Это действие нельзя отменить.';
+});
+
+const showNotification = (title: string, message: string, type: 'success' | 'error' | 'warning' | 'info' = 'success'): void => {
+  notificationTitle.value = title;
+  notificationMessage.value = message;
+  notificationType.value = type;
+  showSuccessNotification.value = true;
+};
+
 const loadTasks = async (): Promise<void> => {
   try {
     setLoading(true);
     setError(null);
+    
     const { taskService } = await import('@/services/api');
     const tasksData = await taskService.getTasks();
     setTasks(tasksData);
-  } catch (err) {
-    setError('Не удалось загрузить задачи');
-    console.error('Error loading tasks:', err);
+    
+    showNotification('Успех', 'Задачи успешно загружены', 'success');
+  } catch (err: any) {
+    setError(err.message);
+    showNotification('Ошибка', err.message, 'error');
   } finally {
     setLoading(false);
   }
@@ -232,17 +274,11 @@ const handleSaveTask = async (taskData: { title: string }): Promise<void> => {
       userId: 1
     });
     
-    // Добавляем задачу в список (JSONPlaceholder возвращает фиктивный ID 201)
-    // Создаем временный ID для отображения
-    const taskWithTempId = {
-      ...newTask,
-      id: Math.max(...tasks.value.map(t => t.id), 0) + 1
-    };
-    addTask(taskWithTempId);
+    addTask(newTask);
     showTaskForm.value = false;
-  } catch (err) {
-    setError('Не удалось создать задачу');
-    console.error('Error creating task:', err);
+    showNotification('Задача создана', 'Новая задача успешно добавлена', 'success');
+  } catch (err: any) {
+    showNotification('Ошибка', 'Не удалось создать задачу', 'error');
   } finally {
     setLoading(false);
   }
@@ -253,23 +289,39 @@ const handleUpdateTask = async (task: Task): Promise<void> => {
     const { taskService } = await import('@/services/api');
     await taskService.updateTask(task.id, task);
     updateTask(task);
-  } catch (err) {
-    setError('Не удалось обновить задачу');
-    console.error('Error updating task:', err);
+    showNotification('Задача обновлена', 'Изменения успешно сохранены', 'success');
+  } catch (err: any) {
+    updateTask(task);
+    showNotification('Обновлено локально', 'Изменения сохранены локально из-за проблем с сетью', 'warning');
   }
 };
 
-const handleDeleteTask = async (taskId: number): Promise<void> => {
-  if (confirm('Вы уверены, что хотите удалить эту задачу?')) {
+// Теперь при удалении показываем модальное окно подтверждения
+const handleDeleteTask = (taskId: number): void => {
+  taskToDelete.value = taskId;
+  showDeleteConfirm.value = true;
+};
+
+const confirmDelete = async (): Promise<void> => {
+  if (taskToDelete.value) {
     try {
       const { taskService } = await import('@/services/api');
-      await taskService.deleteTask(taskId);
-      deleteTask(taskId);
-    } catch (err) {
-      setError('Не удалось удалить задачу');
-      console.error('Error deleting task:', err);
+      await taskService.deleteTask(taskToDelete.value);
+      deleteTask(taskToDelete.value);
+      showNotification('Задача удалена', 'Задача успешно удалена', 'success');
+    } catch (err: any) {
+      deleteTask(taskToDelete.value);
+      showNotification('Удалено локально', 'Задача удалена локально из-за проблем с сетью', 'warning');
+    } finally {
+      taskToDelete.value = null;
+      showDeleteConfirm.value = false;
     }
   }
+};
+
+const cancelDelete = (): void => {
+  taskToDelete.value = null;
+  showDeleteConfirm.value = false;
 };
 
 onMounted(() => {

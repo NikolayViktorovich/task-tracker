@@ -27,6 +27,7 @@
             </span>
           </div>
         </div>
+        
         <div class="task-footer">
           <div class="task-progress">
             <div class="progress-bar">
@@ -58,6 +59,7 @@
         </button>
       </div>
     </div>
+
     <div v-if="isEditing" class="task-edit-form">
       <div class="edit-header">
         <h4>Редактирование задачи</h4>
@@ -148,9 +150,7 @@ const cancelEdit = (): void => {
 };
 
 const deleteTask = (): void => {
-  if (confirm('Вы уверены, что хотите удалить эту задачу?')) {
-    emit('delete', props.task.id);
-  }
+  emit('delete', props.task.id);
 };
 </script>
 
@@ -244,6 +244,10 @@ const deleteTask = (): void => {
   margin: 0;
   flex: 1;
   word-break: break-word;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .task-title-completed {
