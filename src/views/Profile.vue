@@ -1,5 +1,5 @@
 <template>
-  <div class="profile-page">
+  <div class="profile">
     <div class="container-sm">
       <div class="profile-header">
         <h1>Профиль пользователя</h1>

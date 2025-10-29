@@ -1,5 +1,5 @@
 <template>
-  <div class="login-page">
+  <div class="login">
     <div class="login-container">
       <div class="login-hero">
         <div class="hero-content">
@@ -137,7 +137,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 import { authService } from '@/services/auth';
-import type { OAuthProvider } from '@/config/oauth';
+import type { OAuthProvider } from '@/config';
 
 const loading = ref<boolean>(false);
 
