@@ -221,7 +221,7 @@ private async handleGitHubCallback(code: string): Promise<User> {
 
       if (emailsResponse.ok) {
         const emails = await emailsResponse.json();
-        console.log('🔧 User emails:', emails);
+        console.log('User emails:', emails);
         const primaryEmail = emails.find((e: any) => e.primary && e.verified);
         email = primaryEmail ? primaryEmail.email : userInfo.login;
       }
