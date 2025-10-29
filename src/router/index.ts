@@ -38,7 +38,7 @@ router.beforeEach((to, from, next) => {
   const isAuthenticated = !!localStorage.getItem('user');
   
   if (to.meta.requiresAuth && !isAuthenticated) {
-    next('/login');
+    next('/');
   } else {
     next();
   }
