@@ -8,30 +8,20 @@
   ],
   "routes": [
     {
-      "src": "/(.*\\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot))",
-      "dest": "/dist/$1"
-    },
-    {
       "src": "/oauth-callback",
-      "dest": "/dist/index.html"
+      "dest": "/index.html"
     },
     {
-      "src": "/login", 
-      "dest": "/dist/index.html"
+      "src": "/login",
+      "dest": "/index.html"
     },
     {
       "src": "/profile",
-      "dest": "/dist/index.html"
+      "dest": "/index.html"
     },
     {
       "src": "/(.*)",
-      "dest": "/dist/index.html"
-    }
-  ],
-  "rewrites": [
-    {
-      "source": "/(.*)",
-      "destination": "/dist/index.html"
+      "dest": "/index.html"
     }
   ]
 }
