@@ -1,5 +1,10 @@
 <template>
   <div class="login">
+    <div v-if="processingCallback" class="loading-overlay">
+      <div class="spinner-large"></div>
+      <p>Завершаем авторизацию...</p>
+    </div>
+
     <div class="login-container">
       <div class="login-hero">
         <div class="hero-content">
@@ -135,14 +140,43 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, inject, onMounted } from 'vue';
 import { authService } from '@/services/auth';
+import { useAuthStore } from '@/store';
 import type { OAuthProvider } from '@/config';
 
+const authStore = useAuthStore();
+const navigate = inject('navigate') as (path: string) => void;
+
 const loading = ref<boolean>(false);
+const processingCallback = ref<boolean>(false);
 
 const isGoogleConfigured = computed(() => authService.isOAuthConfigured('google'));
 const isGitHubConfigured = computed(() => authService.isOAuthConfigured('github'));
+
+onMounted(async () => {
+  const urlParams = new URLSearchParams(window.location.search);
+  const code = urlParams.get('code');
+  const state = urlParams.get('state');
+  
+  if (code && state) {
+    try {
+      processingCallback.value = true;
+      console.log('Processing OAuth callback...');
+      
+      const user = await authService.handleOAuthCallback();
+      authStore.setUser(user);
+      
+      window.history.replaceState({}, '', '/');
+      navigate('/');
+    } catch (error) {
+      console.error('OAuth error:', error);
+      alert('Ошибка авторизации: ' + (error instanceof Error ? error.message : 'Неизвестная ошибка'));
+    } finally {
+      processingCallback.value = false;
+    }
+  }
+});
 
 const loginWithOAuth = async (provider: OAuthProvider): Promise<void> => {
   try {
@@ -165,49 +199,36 @@ const loginWithGitHub = (): void => {
 </script>
 
 <style scoped>
-.oauth-btn:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
-  transform: none !important;
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(15, 23, 42, 0.9);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  color: white;
 }
 
-.config-error {
-  text-align: center;
-  padding: 30px 20px;
-  background: rgba(239, 68, 68, 0.1);
-  border: 1px solid rgba(239, 68, 68, 0.2);
-  border-radius: var(--radius-lg);
+.loading-overlay p {
+  margin-top: 16px;
+  font-size: 16px;
 }
 
-.config-error .error-icon {
-  color: var(--error-color);
-  margin-bottom: 16px;
+.spinner-large {
+  border: 4px solid rgba(255, 255, 255, 0.1);
+  border-left-color: var(--primary-color);
+  border-radius: 50%;
+  width: 60px;
+  height: 60px;
+  animation: spin 1s linear infinite;
 }
 
-.config-error h3 {
-  color: var(--error-color);
-  margin-bottom: 12px;
-  font-size: 18px;
-}
-
-.config-error p {
-  color: var(--gray-300);
-  margin-bottom: 8px;
-  font-size: 14px;
-}
-
-.config-error ul {
-  text-align: left;
-  color: var(--gray-400);
-  font-size: 12px;
-  margin-top: 12px;
-}
-
-.config-error li {
-  margin-bottom: 4px;
-  font-family: 'Monaco', 'Consolas', monospace;
-}
-.login-page {
+.login {
   min-height: 100vh;
   display: flex;
   align-items: center;
@@ -391,62 +412,53 @@ const loginWithGitHub = (): void => {
   border-color: rgba(51, 51, 51, 0.3);
 }
 
-.oauth-btn.facebook:hover {
-  border-color: rgba(24, 119, 242, 0.3);
+.oauth-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none !important;
 }
 
-.demo-notice {
-  display: flex;
-  gap: 12px;
-  padding: 16px;
-  background: rgba(245, 158, 11, 0.1);
-  border: 1px solid rgba(245, 158, 11, 0.2);
-  border-radius: var(--radius);
-}
-
-.notice-icon {
-  display: flex;
-  align-items: flex-start;
-  color: var(--warning-color);
-  flex-shrink: 0;
-}
-
-.notice-content {
-  flex: 1;
-}
-
-.notice-content strong {
-  display: block;
-  color: var(--warning-color);
-  font-size: 14px;
-  margin-bottom: 4px;
-}
-
-.notice-content p {
-  font-size: 12px;
-  color: var(--gray-300);
-  line-height: 1.4;
-  margin: 0;
-}
-
-.loading-state {
+.config-error {
   text-align: center;
-  padding: 40px 20px;
+  padding: 30px 20px;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: var(--radius-lg);
 }
 
-.spinner-large {
-  border: 3px solid rgba(255, 255, 255, 0.1);
-  border-left-color: var(--primary-color);
-  border-radius: 50%;
-  width: 48px;
-  height: 48px;
-  animation: spin 1s linear infinite;
-  margin: 0 auto 16px;
+.config-error .error-icon {
+  color: var(--error-color);
+  margin-bottom: 16px;
 }
 
-.loading-state p {
-  color: var(--gray-400);
+.config-error h3 {
+  color: var(--error-color);
+  margin-bottom: 12px;
+  font-size: 18px;
+}
+
+.config-error p {
+  color: var(--gray-300);
+  margin-bottom: 8px;
   font-size: 14px;
+}
+
+.config-error ul {
+  text-align: left;
+  color: var(--gray-400);
+  font-size: 12px;
+  margin-top: 12px;
+}
+
+.config-error li {
+  margin-bottom: 4px;
+  font-family: 'Monaco', 'Consolas', monospace;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @media (max-width: 968px) {
@@ -465,7 +477,7 @@ const loginWithGitHub = (): void => {
 }
 
 @media (max-width: 480px) {
-  .login-page {
+  .login {
     padding: 16px;
   }
   
