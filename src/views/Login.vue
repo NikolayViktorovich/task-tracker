@@ -55,13 +55,13 @@
             <p>Выберите способ авторизации</p>
           </div>
 
-          <div v-if="loading" class="loading-state">
-            <div class="spinner-large"></div>
-            <p>Выполняется вход...</p>
-          </div>
-
-          <div v-else class="oauth-buttons">
-            <button @click="loginWithGoogle" class="oauth-btn google">
+          <div class="oauth-buttons">
+            <button 
+              v-if="isGoogleConfigured"
+              @click="loginWithGoogle" 
+              class="oauth-btn google"
+              :disabled="loading"
+            >
               <div class="oauth-icon">
                 <svg width="20" height="20" viewBox="0 0 24 24">
                   <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -71,10 +71,12 @@
                 </svg>
               </div>
               <div class="oauth-content">
-                <span class="oauth-title">Продолжить с Google</span>
-                <span class="oauth-subtitle">Рекомендуемый способ</span>
+                <span class="oauth-title">
+                  {{ loading ? 'Перенаправление...' : 'Войти через Google' }}
+                </span>
+                <span class="oauth-subtitle">Безопасный вход с аккаунтом Google</span>
               </div>
-              <div class="oauth-arrow">
+              <div class="oauth-arrow" v-if="!loading">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
                   <path d="M5 12H19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
                   <path d="M12 5L19 12L12 19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
@@ -82,17 +84,24 @@
               </div>
             </button>
 
-            <button @click="loginWithGitHub" class="oauth-btn github">
+            <button 
+              v-if="isGitHubConfigured"
+              @click="loginWithGitHub" 
+              class="oauth-btn github"
+              :disabled="loading"
+            >
               <div class="oauth-icon">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
                 </svg>
               </div>
               <div class="oauth-content">
-                <span class="oauth-title">Продолжить с GitHub</span>
-                <span class="oauth-subtitle">Для разработчиков</span>
+                <span class="oauth-title">
+                  {{ loading ? 'Перенаправление...' : 'Войти через GitHub' }}
+                </span>
+                <span class="oauth-subtitle">Для разработчиков и IT-специалистов</span>
               </div>
-              <div class="oauth-arrow">
+              <div class="oauth-arrow" v-if="!loading">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
                   <path d="M5 12H19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
                   <path d="M12 5L19 12L12 19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
@@ -100,34 +109,23 @@
               </div>
             </button>
 
-            <button @click="loginWithFacebook" class="oauth-btn facebook">
-              <div class="oauth-icon">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="#1877F2">
-                  <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+            <div v-if="!isGoogleConfigured && !isGitHubConfigured" class="config-error">
+              <div class="error-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                  <path d="M12 8V12M12 16H12.01M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
                 </svg>
               </div>
-              <div class="oauth-content">
-                <span class="oauth-title">Продолжить с Facebook</span>
-                <span class="oauth-subtitle">Быстрый вход</span>
+              <div class="error-content">
+                <h3>OAuth не настроен</h3>
+                <p>Для работы приложения необходимо настроить OAuth провайдеры.</p>
+                <p>Добавьте переменные окружения:</p>
+                <ul>
+                  <li>VITE_GOOGLE_OAUTH_CLIENT_ID</li>
+                  <li>VITE_GOOGLE_OAUTH_CLIENT_SECRET</li>
+                  <li>VITE_GITHUB_OAUTH_CLIENT_ID</li>
+                  <li>VITE_GITHUB_OAUTH_CLIENT_SECRET</li>
+                </ul>
               </div>
-              <div class="oauth-arrow">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                  <path d="M5 12H19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                  <path d="M12 5L19 12L12 19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                </svg>
-              </div>
-            </button>
-          </div>
-
-          <div class="demo-notice">
-            <div class="notice-icon">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                <path d="M12 16H12.01M12 8V12M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-              </svg>
-            </div>
-            <div class="notice-content">
-              <strong>Демо-режим</strong>
-              <p>Авторизация имитируется. В реальном приложении здесь была бы интеграция с OAuth провайдерами.</p>
             </div>
           </div>
         </div>
@@ -137,25 +135,22 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
-import { useRouter } from 'vue-router';
-import { useAuthStore } from '@/store';
+import { ref, computed } from 'vue';
 import { authService } from '@/services/auth';
+import type { OAuthProvider } from '@/config/oauth';
 
-const authStore = useAuthStore();
-const router = useRouter();
 const loading = ref<boolean>(false);
 
-const loginWithOAuth = async (provider: 'google' | 'github' | 'facebook'): Promise<void> => {
+const isGoogleConfigured = computed(() => authService.isOAuthConfigured('google'));
+const isGitHubConfigured = computed(() => authService.isOAuthConfigured('github'));
+
+const loginWithOAuth = async (provider: OAuthProvider): Promise<void> => {
   try {
     loading.value = true;
-    const user = await authService.loginWithOAuth(provider);
-    authStore.setUser(user);
-    router.push('/');
+    await authService.loginWithOAuth(provider);
   } catch (error) {
     console.error('Login error:', error);
-    alert('Ошибка авторизации. Попробуйте снова.');
-  } finally {
+    alert(`Ошибка авторизации: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`);
     loading.value = false;
   }
 };
@@ -167,13 +162,51 @@ const loginWithGoogle = (): void => {
 const loginWithGitHub = (): void => {
   loginWithOAuth('github');
 };
-
-const loginWithFacebook = (): void => {
-  loginWithOAuth('facebook');
-};
 </script>
 
 <style scoped>
+.oauth-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+.config-error {
+  text-align: center;
+  padding: 30px 20px;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: var(--radius-lg);
+}
+
+.config-error .error-icon {
+  color: var(--error-color);
+  margin-bottom: 16px;
+}
+
+.config-error h3 {
+  color: var(--error-color);
+  margin-bottom: 12px;
+  font-size: 18px;
+}
+
+.config-error p {
+  color: var(--gray-300);
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.config-error ul {
+  text-align: left;
+  color: var(--gray-400);
+  font-size: 12px;
+  margin-top: 12px;
+}
+
+.config-error li {
+  margin-bottom: 4px;
+  font-family: 'Monaco', 'Consolas', monospace;
+}
 .login-page {
   min-height: 100vh;
   display: flex;

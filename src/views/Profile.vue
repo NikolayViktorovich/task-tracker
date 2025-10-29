@@ -64,7 +64,7 @@
                 </svg>
               </div>
               <div class="stat-content">
-                <div class="stat-number">{{ completedTasks }}</div>
+                <div class="stat-number">{{ completedTasksCount }}</div>
                 <div class="stat-label">Выполнено</div>
               </div>
             </div>
@@ -77,7 +77,7 @@
                 </svg>
               </div>
               <div class="stat-content">
-                <div class="stat-number">{{ pendingTasks }}</div>
+                <div class="stat-number">{{ pendingTasksCount }}</div>
                 <div class="stat-label">В процессе</div>
               </div>
             </div>
@@ -133,9 +133,21 @@ const { user } = storeToRefs(authStore);
 const { tasks, completedTasks, pendingTasks } = storeToRefs(taskStore);
 
 const totalTasks = computed(() => tasks.value.length);
+
+const completedTasksCount = computed(() => {
+  const count = completedTasks.value.length;
+  return count;
+});
+
+const pendingTasksCount = computed(() => {
+  const count = pendingTasks.value.length;
+  return count;
+});
+
 const completionRate = computed(() => {
   if (tasks.value.length === 0) return 0;
-  return Math.round((completedTasks.value.length / tasks.value.length) * 100);
+  const rate = Math.round((completedTasks.value.length / tasks.value.length) * 100);
+  return rate;
 });
 
 const getProviderName = (provider?: User['provider']): string => {
@@ -143,7 +155,7 @@ const getProviderName = (provider?: User['provider']): string => {
   
   const providers = {
     google: 'Google',
-    github: 'GitHub',
+    github: 'GitHub', 
     facebook: 'Facebook'
   };
   return providers[provider];
