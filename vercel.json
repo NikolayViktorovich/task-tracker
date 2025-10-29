@@ -1,0 +1,13 @@
+{
+  "routes": [
+    {
+      "src": "/oauth-callback",
+      "dest": "/index.html",
+      "methods": ["GET"]
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
+    }
+  ]
+}
