@@ -1,52 +1,47 @@
-import { createRouter, createWebHistory } from 'vue-router'
-import { useAuthStore } from '@/store'
-import { authService } from '@/services/auth'
+import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router';
+import Home from '../views/Home.vue';
+import Login from '../views/Login.vue';
+import Profile from '../views/Profile.vue';
+import OAuthCallback from '../views/OAuthCallback.vue';
+
+const routes: Array<RouteRecordRaw> = [
+  {
+    path: '/',
+    name: 'Home',
+    component: Home,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/login',
+    name: 'Login',
+    component: Login
+  },
+  {
+    path: '/profile',
+    name: 'Profile',
+    component: Profile,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/oauth-callback',
+    name: 'OAuthCallback',
+    component: OAuthCallback
+  }
+];
 
 const router = createRouter({
   history: createWebHistory(),
-  routes: [
-    {
-      path: '/',
-      name: 'home',
-      component: () => import('@/views/Home.vue'),
-      meta: { requiresAuth: true }
-    },
-    {
-      path: '/login',
-      name: 'login', 
-      component: () => import('@/views/Login.vue'),
-      meta: { requiresGuest: true }
-    },
-    {
-      path: '/profile',
-      name: 'profile',
-      component: () => import('@/views/Profile.vue'),
-      meta: { requiresAuth: true }
-    },
-    {
-      path: '/oauth-callback',
-      name: 'oauth-callback',
-      component: () => import('@/views/OAuthCallback.vue')
-    }
-  ]
-})
+  routes
+});
 
 router.beforeEach((to, from, next) => {
-  const authStore = useAuthStore()
-  const isAuthenticated = authService.checkAuth()
-
-  if (isAuthenticated && !authStore.user) {
-    const user = authService.checkAuth()
-    if (user) authStore.setUser(user)
-  }
-
+  const isAuthenticated = !!localStorage.getItem('user');
+  
   if (to.meta.requiresAuth && !isAuthenticated) {
-    next('/login')
-  } else if (to.meta.requiresGuest && isAuthenticated) {
-    next('/')
+    next('/login');
   } else {
-    next()
+    next();
   }
-})
+});
 
-export default router
+export default router;
